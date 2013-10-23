@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="chart" class="chart"></div>
+<script type="text/javascript" src="http://www.google.com/jsapi"></script>
+<script type="text/javascript">
+google.load("visualization", "1", {"packages": ["corechart"]});
+google.setOnLoadCallback(drawChart);
+function drawChart() {
+    var data = new google.visualization.DataTable();
+
+    {% set chart_title_data_type = chart.data_type %}
+    {% if chart.data_type == "jobrole" %}
+        {% set chart_title_data_type = "job role" %}
+    {% endif %}
+
+    data.addColumn("string", "{{ chart.x.label }}");
+    {% for line in chart.lines %}
+        {% if chart.data_type == "age" %}
+            data.addColumn("number", "Age {{ line|replace('-', ' - ') }}");
+        {% elif chart.data_type == "manager" %}
+            {% if line == "0" %}
+                data.addColumn("number", "Non-manager");
+            {% else %}
+                data.addColumn("number", "Manager");
+            {% endif %}
+        {% else %}
+            data.addColumn("number", "{{ line }}");
+        {% endif %}
+    {% endfor %}
+
+    data.addRows([
+        {% for columns in chart.data_rows %}
+            [{% for column in columns %}
+                {% if loop.first %}
+                    "{{ column }}"
+                {% else %}
+                    {{ column }}
+                {% endif %}
+                {% if not loop.last %},{% endif %}
+            {% endfor %}]{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]);
+
+    var options = {
+        title: "{{ chart.y.unit|title }} {{ chart.x.unit|title }} {{ chart.y.label|title }} in {{ base_currency }} by {{ chart_title_data_type|title }}",
+        titleTextStyle: {
+            fontSize: 12
+        },
+        chartArea: {
+            width: "65%",
+            height: "78%"
+        },
+        fontSize: 11,
+        hAxis: {
+            title: "Date"
+        },
+        vAxis: {
+            title: "{{ chart.y.unit|title }} {{ chart.y.label|title }}",
+            format: "{{ base_currency }} #",
+            baselineColor: "#eee",
+            gridlines: {
+                color: "#eee",
+                count: 8
+            },
+            minorGridlines: {
+                color: "#f8f8f8",
+                count: 3
+            }
+        },
+        lineWidth: 1,
+        pointSize: 3
+    };
+
+    var chart = new google.visualization.LineChart(document.getElementById("chart"));
+    chart.draw(data, options);
+};
+</script>
+{% endblock %}
